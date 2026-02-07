@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
 import uuid
+import numpy as np
 import json
 
 import sys, os
@@ -54,6 +55,22 @@ class BacktestResult:
             'daily_returns': self.daily_returns,
             'portfolio_values': self.portfolio_values,
         }
+
+
+
+def _convert_numpy(obj):
+    """递归转换numpy类型为Python原生类型"""
+    if isinstance(obj, dict):
+        return {k: _convert_numpy(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_numpy(v) for v in obj]
+    elif isinstance(obj, (np.integer, np.int64)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
 
 
 class BacktestEngine:
@@ -198,16 +215,17 @@ class BacktestEngine:
         return result
     
     def _calculate_daily_return(self, data: pd.DataFrame, date: str) -> float:
-        """计算市场日收益率"""
+        """计算市场日收益率（限制范围）"""
         try:
             day_data = data.loc[date]
             if isinstance(day_data, pd.DataFrame):
                 returns = day_data['close'].pct_change().dropna()
                 if not returns.empty:
-                    return returns.mean()
-            elif isinstance(day_data, pd.Series):
-                return 0
-        except KeyError:
+                    ret = returns.mean()
+                    # 限制收益率范围 -10% ~ +10%
+                    return max(-0.10, min(0.10, ret))
+            return 0
+        except (KeyError, TypeError):
             pass
         return 0
     
@@ -391,29 +409,36 @@ class BacktestEngine:
         # 汇总指标
         metrics_df = pd.DataFrame([{
             'factor_name': r.factor_name,
-            'annual_return': r.annual_return,
-            'sharpe_ratio': r.sharpe_ratio,
-            'max_drawdown': r.max_drawdown,
-            'win_rate': r.win_rate,
-            'total_trades': r.total_trades,
+            'annual_return': float(r.annual_return),
+            'sharpe_ratio': float(r.sharpe_ratio),
+            'max_drawdown': float(r.max_drawdown),
+            'win_rate': float(r.win_rate),
+            'total_trades': int(r.total_trades),
         } for r in results])
         
         best = results[0] if results else None
+        
+        # 序列化结果 - 确保numpy类型被转换
+        factor_details = []
+        for r in results:
+            d = r.to_dict()
+            d = _convert_numpy(d)
+            factor_details.append(d)
         
         save_backtest_result(backtest_id, {
             'factor_list': [r.factor_name for r in results],
             'start_date': best.start_date if best else None,
             'end_date': best.end_date if best else None,
-            'initial_capital': self.initial_capital,
-            'final_capital': best.final_capital if best else 0,
-            'annual_return': best.annual_return if best else 0,
-            'sharpe_ratio': best.sharpe_ratio if best else 0,
-            'max_drawdown': best.max_drawdown if best else 0,
-            'win_rate': best.win_rate if best else 0,
-            'total_trades': sum(r.total_trades for r in results),
+            'initial_capital': float(self.initial_capital),
+            'final_capital': float(best.final_capital) if best else 0,
+            'annual_return': float(best.annual_return) if best else 0,
+            'sharpe_ratio': float(best.sharpe_ratio) if best else 0,
+            'max_drawdown': float(best.max_drawdown) if best else 0,
+            'win_rate': float(best.win_rate) if best else 0,
+            'total_trades': int(sum(r.total_trades for r in results)),
             'results_json': {
-                'metrics': metrics_df.to_dict(orient='records'),
-                'factor_details': [r.to_dict() for r in results],
+                'metrics': _convert_numpy(metrics_df.to_dict(orient='records')),
+                'factor_details': factor_details,
             }
         })
         

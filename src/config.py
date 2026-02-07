@@ -94,9 +94,20 @@ class DataConfig:
     """Data source settings"""
     
     DEFAULT_START_DATE = "20080101"
-    DATA_SOURCE = os.getenv("DATA_SOURCE", "akshare")  # akshare or baostock
-    REQUEST_DELAY = float(os.getenv("REQUEST_DELAY", "0.1"))  # seconds between requests
+    DATA_SOURCE = os.getenv("DATA_SOURCE", "tushare")  # tushare, akshare, baostock
+    REQUEST_DELAY = float(os.getenv("REQUEST_DELAY", "0.34"))  # Tushare: 0.34s for 180 req/min
     CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))  # 1 hour
+    
+    # Data source priority
+    SOURCE_PRIORITY = ['tushare', 'akshare', 'baostock']
+
+
+class TushareConfig:
+    """Tushare Pro settings"""
+    
+    TOKEN = os.getenv("TUSHARE_APIKEY") or os.getenv("TUSHARE_TOKEN")
+    RATE_LIMIT_PER_MINUTE = 180  # Leave 10% margin from 200
+    RATE_LIMIT_PER_DAY = 100000  # Per API
 
 
 # Logging Configuration

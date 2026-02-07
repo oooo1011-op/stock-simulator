@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, text, MetaData, Table, Column, String, Float, Date, Integer, JSON
+from sqlalchemy import create_engine, text, MetaData, Table, Column, String, Float, Date, Integer, JSON, UniqueConstraint
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -44,9 +44,14 @@ daily_prices_table = Table(
     Column('high', Float),
     Column('low', Float),
     Column('close', Float),
+    Column('pre_close', Float),
+    Column('change', Float),
+    Column('pct_change', Float),
     Column('volume', Float),
     Column('amount', Float),
     Column('created_at', Date, default=datetime.utcnow),
+    # Unique constraint for UPSERT
+    UniqueConstraint('stock_code', 'date', name='uix_stock_date')
 )
 
 
@@ -124,7 +129,7 @@ def save_daily_data(stock_code: str, df: pd.DataFrame) -> int:
     
     Args:
         stock_code: Stock symbol (e.g., '000001')
-        df: DataFrame with columns [date, open, high, low, close, volume, amount]
+        df: DataFrame with columns [open, high, low, close, volume, amount], MultiIndex (date, symbol)
     
     Returns:
         Number of rows inserted
@@ -133,12 +138,10 @@ def save_daily_data(stock_code: str, df: pd.DataFrame) -> int:
         return 0
     
     try:
-        df = df.copy()
-        df['stock_code'] = stock_code
+        # 重置索引，展开date和symbol
+        df = df.reset_index()
         
-        # Insert using raw SQL for performance
         with get_db_session() as session:
-            # Use COPY or bulk insert
             for _, row in df.iterrows():
                 stmt = text("""
                     INSERT INTO daily_prices 
@@ -153,14 +156,14 @@ def save_daily_data(stock_code: str, df: pd.DataFrame) -> int:
                         amount = EXCLUDED.amount
                 """)
                 session.execute(stmt, {
-                    'stock_code': row['stock_code'],
+                    'stock_code': stock_code,
                     'date': pd.to_datetime(row['date']).date() if isinstance(row['date'], str) else row['date'].date(),
-                    'open': row['open'],
-                    'high': row['high'],
-                    'low': row['low'],
-                    'close': row['close'],
-                    'volume': row['volume'],
-                    'amount': row['amount']
+                    'open': float(row['open']),
+                    'high': float(row['high']),
+                    'low': float(row['low']),
+                    'close': float(row['close']),
+                    'volume': float(row['volume']),
+                    'amount': float(row['amount'])
                 })
         
         logger.info(f"Saved {len(df)} rows for {stock_code}")

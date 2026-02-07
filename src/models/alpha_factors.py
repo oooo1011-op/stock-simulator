@@ -549,7 +549,7 @@ class AlphaCalculator:
     
     def alpha85(self, df: pd.DataFrame) -> pd.Series:
         """Alpha#85: (rank(correlation(((high * 0.876703) + (close * (1 - 0.876703))), adv30, 9.61331))^rank(correlation(Ts_Rank(((high + low) / 2), 3.70596), Ts_Rank(volume, 10.1595), 7.11408)))"""
-        high, close, adv30, volume = df['high'], df['close'], df['adv20'], df['volume']  # Use adv20
+        high, close, low, adv30, volume = df['high'], df['close'], df['low'], df['adv20'], df['volume']
         combined = high * 0.876703 + close * 0.123297
         term1 = rank(correlation(combined, adv30, 10))
         term2 = correlation(ts_rank((high + low) / 2, 4), ts_rank(volume, 10), 7)

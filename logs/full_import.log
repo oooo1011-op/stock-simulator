@@ -1,0 +1,18 @@
+2026-02-07 22:30:12.127 | INFO     | src.data.tushare_fetcher:__init__:52 - TushareDataFetcher initialized (rate limit: 180 req/min)
+2026-02-07 22:30:12.127 | INFO     | __main__:_init_fetchers:56 - ✅ Tushare initialized (primary)
+2026-02-07 22:30:12.345 | INFO     | __main__:_init_fetchers:64 - ✅ Akshare initialized (backup 1)
+2026-02-07 22:30:12.352 | INFO     | __main__:_init_fetchers:72 - ✅ Baostock initialized (backup 2)
+2026-02-07 22:30:12.352 | INFO     | __main__:import_data:297 - ============================================================
+2026-02-07 22:30:12.352 | INFO     | __main__:import_data:298 - 📊 A股主板数据导入
+2026-02-07 22:30:12.352 | INFO     | __main__:import_data:299 - ============================================================
+2026-02-07 22:30:12.352 | INFO     | __main__:import_data:300 - 时间范围: 20080101 ~ 20260206
+2026-02-07 22:30:12.352 | INFO     | __main__:import_data:303 - 
+🔧 Initializing database...
+2026-02-07 22:30:12.427 | INFO     | src.database.postgres:init_db:105 - Database tables initialized successfully
+2026-02-07 22:30:12.427 | INFO     | __main__:get_stock_list:81 - 📋 Getting mainboard stock list...
+2026-02-07 22:30:12.703 | INFO     | src.data.tushare_fetcher:get_stock_list:106 - Got 3038 mainboard stocks from Tushare
+2026-02-07 22:30:12.703 | INFO     | __main__:get_stock_list:95 - ✅ Got 3038 stocks from tushare
+2026-02-07 22:30:12.704 | INFO     | __main__:import_data:328 - 
+📈 Total stocks to import: 3038
+2026-02-07 22:30:12.704 | INFO     | __main__:import_data:331 - 
+🚀 Starting import...
