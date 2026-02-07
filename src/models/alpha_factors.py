@@ -595,3 +595,130 @@ class AlphaCalculator:
         """Alpha#101: ((close - open) / ((high - low) + .001))"""
         close, open_, high, low = df['close'], df['open'], df['high'], df['low']
         return (close - open_) / ((high - low) + 0.001)
+
+    def alpha64(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#64: ((rank(correlation(sum(((open * 0.178404) + (low * (1 - 0.178404))), 12.7054), sum(adv120, 12.7054), 16.6208)) < rank(delta(((((high + low) / 2) * 0.178404) + (vwap * (1 - 0.178404)), 3.69741))) * -1"""
+        open_, low, high, vwap, adv20 = df['open'], df['low'], df['high'], df['vwap'], df['adv20']
+        combined1 = open_ * 0.178404 + low * 0.821596
+        combined2 = ((high + low) / 2) * 0.178404 + vwap * 0.821596
+        cond = rank(correlation(sum_rolling(combined1, 13), sum_rolling(adv20, 13), 17)) < rank(delta(combined2, 4))
+        return cond.astype(int) * 2 - 1
+    
+    def alpha65(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#65: ((rank(correlation(((open * 0.00817205) + (vwap * (1 - 0.00817205))), sum(adv60, 8.6911), 6.40374)) < rank((open - ts_min(open, 13.635)))) * -1"""
+        open_, vwap, adv20 = df['open'], df['vwap'], df['adv20']
+        combined = open_ * 0.00817205 + vwap * 0.991828
+        cond = rank(correlation(combined, sum_rolling(adv20, 9), 6)) < rank(open_ - ts_min(open_, 14))
+        return cond.astype(int) * 2 - 1
+    
+    def alpha66(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#66: ((rank(decay_linear(delta(vwap, 3.51013), 7.23052)) + Ts_Rank(decay_linear(((((low * 0.96633) + (low * (1 - 0.96633))) - vwap) / (open - ((high + low) / 2))), 11.4157), 6.72611)) * -1"""
+        low, vwap, open_, high = df['low'], df['vwap'], df['open'], df['high']
+        decay1 = decay_linear(delta(vwap, 4), 7)
+        inner = ((low * 0.96633 + low * 0.03367) - vwap) / (open_ - (high + low) / 2)
+        decay2 = ts_rank(decay_linear(inner, 11), 7)
+        return (rank(decay1) + decay2) * -1
+    
+    def alpha68(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#68: ((Ts_Rank(correlation(rank(high), rank(adv15), 8.91644), 13.9333) < rank(delta(((close * 0.518371) + (low * (1 - 0.518371))), 1.06157))) * -1"""
+        high, low, close, adv20 = df['high'], df['low'], df['close'], df['adv20']
+        combined = close * 0.518371 + low * 0.481629
+        cond = ts_rank(correlation(rank(high), rank(adv20), 9), 14) < rank(delta(combined, 1))
+        return cond.astype(int) * 2 - 1
+    
+    def alpha72(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#72: (rank(decay_linear(correlation(((high + low) / 2), adv40, 8.93345), 10.1519)) / rank(decay_linear(correlation(Ts_Rank(vwap, 3.72469), Ts_Rank(volume, 18.5188), 6.86671), 2.95011))"""
+        high, low, vwap, volume, adv20 = df['high'], df['low'], df['vwap'], df['volume'], df['adv20']
+        mid = (high + low) / 2
+        num = rank(decay_linear(correlation(mid, adv20, 9), 10))
+        denom = rank(decay_linear(correlation(ts_rank(vwap, 4), ts_rank(volume, 19), 7), 3))
+        return num / denom
+    
+    def alpha73(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#73: (max(rank(decay_linear(delta(vwap, 4.72775), 2.91864)), Ts_Rank(decay_linear(((delta(((open * 0.147155) + (low * (1 - 0.147155))), 2.03608) / ((open * 0.147155) + (low * (1 - 0.147155)))) * -1), 3.33829), 16.7411)) * -1"""
+        vwap, open_, low = df['vwap'], df['open'], df['low']
+        delta_vwap = delta(vwap, 5)
+        term1 = rank(decay_linear(delta_vwap, 3))
+        combined = open_ * 0.147155 + low * 0.852845
+        delta_combined = delta(combined, 2)
+        term2 = ts_rank(decay_linear(-1 * delta_combined / combined, 3), 17)
+        return (pd.Series(np.maximum(term1, term2), index=df.index) * -1)
+    
+    def alpha75(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#75: (rank(correlation(vwap, volume, 4.24304)) < rank(correlation(rank(low), rank(adv50), 12.4413)))"""
+        vwap, volume, low, adv20 = df['vwap'], df['volume'], df['low'], df['adv20']
+        cond = rank(correlation(vwap, volume, 4)) < rank(correlation(rank(low), rank(adv20), 12))
+        return cond.astype(int) * 2 - 1
+    
+    def alpha76(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#76: (max(rank(decay_linear(delta(vwap, 1.24383), 11.8259)), Ts_Rank(decay_linear(Ts_Rank(correlation(IndNeutralize(low, IndClass.sector), adv81, 8.14941), 19.569), 17.1543), 19.383)) * -1"""
+        vwap, low, adv20 = df['vwap'], df['low'], df['adv20']
+        term1 = rank(decay_linear(delta(vwap, 1), 12))
+        inner = correlation(low, adv20, 8)
+        term2 = ts_rank(decay_linear(ts_rank(inner, 20), 17), 19)
+        return pd.Series(np.maximum(term1, term2), index=df.index) * -1
+    
+    def alpha77(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#77: min(rank(decay_linear(((((high + low) / 2) + high) - (vwap + high)), 20.0451)), rank(decay_linear(correlation(((high + low) / 2), adv40, 3.1614), 5.64125)))"""
+        high, low, vwap, adv20 = df['high'], df['low'], df['vwap'], df['adv20']
+        mid = (high + low) / 2
+        inner1 = mid + high - (vwap + high)
+        term1 = rank(decay_linear(inner1, 20))
+        term2 = rank(decay_linear(correlation(mid, adv20, 3), 6))
+        return pd.Series(np.minimum(term1, term2), index=df.index)
+    
+    def alpha78(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#78: (rank(correlation(sum(((low * 0.352233) + (vwap * (1 - 0.352233))), 19.7428), sum(adv40, 19.7428), 6.83313))^rank(correlation(rank(vwap), rank(volume), 5.77492)))"""
+        low, vwap, adv20, volume = df['low'], df['vwap'], df['adv20'], df['volume']
+        combined = low * 0.352233 + vwap * 0.647767
+        term1 = rank(correlation(sum_rolling(combined, 20), sum_rolling(adv20, 20), 7))
+        term2 = rank(correlation(rank(vwap), rank(volume), 6))
+        return signedpower(term1, term2)
+    
+    def alpha81(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#81: ((rank(Log(product(rank((rank(correlation(vwap, sum(adv10, 49.6054), 8.47743))^4)), 14.9655))) < rank(correlation(rank(vwap), rank(volume), 5.07914))) * -1"""
+        vwap, volume, adv20 = df['vwap'], df['volume'], df['adv20']
+        inner = correlation(vwap, sum_rolling(adv20, 50), 8)
+        prod = product(rank(rank(inner) ** 4), 15)
+        term1 = rank(np.log(prod))
+        term2 = rank(correlation(rank(vwap), rank(volume), 5))
+        cond = term1 < term2
+        return cond.astype(int) * 2 - 1
+    
+    def alpha82(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#82: (min(rank(decay_linear(delta(open, 1.46063), 14.8717)), Ts_Rank(decay_linear(correlation(IndNeutralize(volume, IndClass.sector), ((open * 0.634196) + (open * (1 - 0.634196))), 17.4842), 6.92131), 13.4283)) * -1"""
+        open_, volume = df['open'], df['volume']
+        term1 = rank(decay_linear(delta(open_, 1), 15))
+        inner = volume * 0.634196 + open_ * 0.365804
+        term2 = ts_rank(decay_linear(correlation(volume, inner, 17), 7), 13)
+        return pd.Series(np.minimum(term1, term2), index=df.index) * -1
+    
+    def alpha89(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#89: (Ts_Rank(decay_linear(correlation(((low * 0.967285) + (low * (1 - 0.967285))), adv10, 6.94279), 5.51607), 3.79744) - Ts_Rank(decay_linear(delta(IndNeutralize(vwap, IndClass.industry), 3.48158), 10.1466), 15.3012))"""
+        low, adv20, vwap = df['low'], df['adv20'], df['vwap']
+        combined = low * 0.967285 + low * 0.032715
+        term1 = ts_rank(decay_linear(correlation(combined, adv20, 7), 6), 4)
+        term2 = ts_rank(decay_linear(delta(vwap, 3), 10), 15)
+        return term1 - term2
+    
+    def alpha94(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#94: ((rank((vwap - ts_min(vwap, 11.5783)))^Ts_Rank(correlation(Ts_Rank(vwap, 19.6462), Ts_Rank(adv60, 4.02992), 18.0926), 2.70756)) * -1"""
+        vwap, adv20 = df['vwap'], df['adv20']
+        term1 = rank(vwap - ts_min(vwap, 12))
+        term2 = ts_rank(correlation(ts_rank(vwap, 20), ts_rank(adv20, 4), 18), 3)
+        return signedpower(term1, term2) * -1
+    
+    def alpha96(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#96: (max(Ts_Rank(decay_linear(correlation(rank(vwap), rank(volume), 3.83878), 4.16783), 8.38151), Ts_Rank(decay_linear(Ts_ArgMax(correlation(Ts_Rank(close, 7.45404), Ts_Rank(adv60, 4.13242), 3.65459), 12.6556), 14.0365), 13.4143)) * -1"""
+        vwap, volume, close, adv20 = df['vwap'], df['volume'], df['close'], df['adv20']
+        term1 = ts_rank(decay_linear(correlation(rank(vwap), rank(volume), 4), 4))
+        inner = ts_argmax(correlation(ts_rank(close, 7), ts_rank(adv20, 4), 4), 13)
+        term2 = ts_rank(decay_linear(inner, 14), 13)
+        return pd.Series(np.maximum(term1, term2), index=df.index) * -1
+    
+    def alpha99(self, df: pd.DataFrame) -> pd.Series:
+        """Alpha#99: ((rank(correlation(sum(((high + low) / 2), 19.8975), sum(adv60, 19.8975), 8.8136)) < rank(correlation(low, volume, 6.28259))) * -1"""
+        high, low, volume, adv20 = df['high'], df['low'], df['volume'], df['adv20']
+        mid = (high + low) / 2
+        cond = rank(correlation(sum_rolling(mid, 20), sum_rolling(adv20, 20), 9)) < rank(correlation(low, volume, 6))
+        return cond.astype(int) * 2 - 1
