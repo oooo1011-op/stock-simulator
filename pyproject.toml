@@ -26,3 +26,9 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 package- = false
+
+[project.scripts]
+stock-backtest = "src.engine.backtest:main"
+stock-simulator = "src.engine.simulator:main"
+stock-api = "src.api.server:main"
+stock-scheduler = "src.scheduler.jobs:main"
