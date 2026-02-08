@@ -16,3 +16,10 @@
 📈 Total stocks to import: 3038
 2026-02-07 22:30:12.704 | INFO     | __main__:import_data:331 - 
 🚀 Starting import...
+2026-02-07 22:39:52.657 | INFO     | src.data.tushare_fetcher:_rate_limit:66 - Tushare API requests: 100
+2026-02-07 22:49:51.026 | INFO     | src.data.tushare_fetcher:_rate_limit:66 - Tushare API requests: 200
+2026-02-07 22:50:01.069 | INFO     | __main__:import_data:348 - Progress: 100/3038 | Success: 100 | Records: 320,457 | Rate: 5 stocks/min
+2026-02-07 23:00:50.957 | INFO     | src.data.tushare_fetcher:_rate_limit:66 - Tushare API requests: 300
+2026-02-07 23:10:57.794 | INFO     | src.data.tushare_fetcher:_rate_limit:66 - Tushare API requests: 400
+2026-02-07 23:11:14.556 | INFO     | __main__:import_data:348 - Progress: 200/3038 | Success: 200 | Records: 649,120 | Rate: 5 stocks/min
+2026-02-07 23:21:39.082 | INFO     | src.data.tushare_fetcher:_rate_limit:66 - Tushare API requests: 500
